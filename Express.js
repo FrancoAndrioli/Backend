@@ -1,13 +1,13 @@
 const express = require('express');
+const { Router } = express;
+bodyParser = require('body-parser').json();
 
 const server = express();
+const routerProductos = Router();
 
 const Contenedor = require('./Contenedor.js');
 
-server.get('/', function(req, res){
-  let msj = `Binvenido al servidor express`;
-  res.send(`<h1>${msj}</h1>`)
-});
+server.use('/', routerProductos);
 
 let productos = [
   {
@@ -48,7 +48,11 @@ let productos = [
   }
 ]
 
-server.get('/productos', function(req, res){
+routerProductos.get("/", (req, res) => {
+  res.send("index.html")
+})
+
+routerProductos.get('/api/productos', function(req, res){
   res.send(productos)
 });
 
@@ -58,15 +62,47 @@ const getRandomInt = (min, max) => {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
-server.get('/productoRandom', function(req, res){
+routerProductos.get('/productoRandom', function(req, res){
   const producto = productos[getRandomInt(0, productos.length)];
   res.send(producto);
 });
 
-server.get('/contenedor', function(req, res){
-  const cont = new Contenedor("products");
-  const all = JSON.parse(cont.getAll());
-  res.send(all);
+routerProductos.get('/api/productos/:id', function(req, res){
+  const producto = productos.find(item => item.id == req.params.id);
+  if(producto) {
+    res.send(producto);
+  } else {
+    res.send({ p: producto, error: 'producto no encontrado' })
+  }
+})
+
+routerProductos.post('/api/productos', bodyParser, function(req, res){
+  const producto = {
+    id: productos.length + 1,
+    ...req.body
+  };
+  productos.push(producto);
+  res.send(productos);
+})
+
+routerProductos.put('/api/productos/:id', bodyParser, function(req, res){
+  const producto = productos.findIndex(item => item.id == req.params.id);
+  if(producto) {
+    console.log(producto)
+    productos[producto] = {
+      id: producto + 1,
+      ...req.body
+    }
+    res.send(productos);
+  } else {
+    res.send({ error: 'producto no encontrado' })
+  }
+})
+
+routerProductos.delete('/api/productos/:id', function(req, res){
+  const newProd = productos.filter(item => item.id != req.params.id);
+  productos = newProd;
+  res.send(productos);
 })
 
 server.listen(8080, () => {
